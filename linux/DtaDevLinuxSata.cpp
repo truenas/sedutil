@@ -53,6 +53,7 @@ along with sedutil.  If not, see <http://www.gnu.org/licenses/>.
 #define QUEUE_FULL  
 
 using namespace std;
+uint8_t g_compat_bsd = 0;
 
 /** The Device class represents a single disk device.
  *  Linux specific implementation using the SCSI generic interface and
@@ -85,6 +86,106 @@ bool DtaDevLinuxSata::init(const char * devref)
         isOpen = TRUE;
     }
 	return isOpen;
+}
+
+/*
+ * Determines if the transport for the given file descriptor `fd` is SATA.
+ *
+ * Steps:
+ * 1. Resolve `/proc/self/fd/<fd>` to get the SCSI device name.
+ * 2. Read the symlink `/sys/class/block/<sdX>/device` to extract
+ * the Host Bus Number.
+ * 3. Check `/sys/class/scsi_host/<Host>/proc_name` to see if the driver
+ * is "ahci".
+ *
+ * Returns true if the transport is SATA; false otherwise.
+ */
+bool is_sata_transport(int fd)
+{
+    char dev_path[1024];
+    char host_link[1024];
+    try {
+        string fd_path = "/proc/self/fd/" + to_string(fd);
+        ssize_t len = readlink(fd_path.c_str(), dev_path, sizeof(dev_path) - 1);
+        if (len == -1)
+            return (false);
+        dev_path[len] = '\0';
+        string dev_name = string(dev_path);
+        if (dev_name.substr(0, 5) != "/dev/")
+            return (false);
+        dev_name = dev_name.substr(5);
+        string host_path = "/sys/class/block/" + dev_name + "/device";
+        len = readlink(host_path.c_str(), host_link, sizeof(host_link) - 1);
+        if (len == -1)
+            return (false);
+        host_link[len] = '\0';
+        string host_str = string(host_link);
+        size_t pos = host_str.find_last_of('/');
+        if (pos == string::npos)
+            return (false);
+        size_t colon_pos = host_str.find(':', pos);
+        if (colon_pos == string::npos)
+            return (false);
+        int host_id = stoi(host_str.substr(pos + 1, colon_pos - pos - 1));
+        ifstream proc_file("/sys/class/scsi_host/host" + to_string(host_id) + "/proc_name");
+        string proc_name;
+        if (getline(proc_file, proc_name) && (proc_name == "ahci" || proc_name == "ata"))
+            return (true);
+    } catch (...) {}
+    return (false);
+}
+
+static void
+scsi_truncate_spaces(uint8_t *buf, int len)
+{
+    uint8_t serial_buf_temp[len + 1];
+    serial_buf_temp[len] = 0;
+    memcpy(serial_buf_temp, buf, len);
+    int start = strspn((char*)serial_buf_temp, " ");
+    int slen = len - start;
+    if (slen <= 0) {
+        /*
+         * SPC5r05 says that an all-space serial
+         * number means no product serial number
+         * is available
+         */
+        slen = 0;
+    }
+    memcpy(buf, &serial_buf_temp[start], slen);
+    memset(buf + slen, 0, start);
+}
+
+static void
+ata_btrim(uint8_t *buf, int len)
+{
+    uint8_t *ptr;
+    for (ptr = buf; ptr < buf+len; ++ptr)
+        if (!*ptr || *ptr == '_')
+            *ptr = ' ';
+    for (ptr = buf + len - 1; ptr >= buf && *ptr == ' '; --ptr)
+        *ptr = 0;
+}
+
+static void
+ata_bpack(uint8_t *src, uint8_t *dst, int len)
+{
+    int i, j, blank;
+    for (i = j = blank = 0 ; i < len; i++) {
+        if (blank && src[i] == ' ') continue;
+        if (blank && src[i] != ' ') {
+            dst[j++] = src[i];
+            blank = 0;
+            continue;
+        }
+        if (src[i] == ' ') {
+            blank = 1;
+            if (i == 0)
+            continue;
+        }
+        dst[j++] = src[i];
+    }
+    while (j < len)
+        dst[j++] = 0x00;
 }
 
 /** Send an ioctl to the device using pass through. */
@@ -317,6 +418,17 @@ for (unsigned int i = 0; i < sizeof (disk_info.modelNum); i += 2) {
     disk_info.modelNum[i + 1] = id->modelNum[i];
 }
 
+    if (g_compat_bsd) {
+        if (is_sata_transport(fd)) {
+            /*
+             * Inspired by FreeBSD's ata_param_fixup()
+             */
+            ata_btrim(disk_info.serialNum, 20);
+            ata_bpack(disk_info.serialNum, disk_info.serialNum, 20);
+        } else {
+            scsi_truncate_spaces(disk_info.serialNum, 20);
+        }
+    }
     free(buffer);
     return;
 }
@@ -413,6 +525,66 @@ static void safecopy(uint8_t * dst, size_t dstsize, uint8_t * src, size_t srcsiz
     if (size < dstsize) memset(dst+size, '\0', dstsize-size);
 }
 
+static void retrieve_serial_from_vpd(int fd, uint8_t *resp_buf, size_t resp_buf_len)
+{
+    sg_io_hdr_t sg;
+    uint8_t sense[18];
+    uint8_t cdb[sizeof(CScsiCmdInquiry)];
+    int buflen = sizeof(CScsiCmdInquiry_VPD80);
+    uint8_t *buffer = (uint8_t *) aligned_alloc(IO_BUFFER_ALIGNMENT, buflen);
+
+    memset(&cdb, 0, sizeof (cdb));
+    memset(&sense, 0, sizeof (sense));
+    memset(&sg, 0, sizeof (sg));
+
+    // fill out SCSI command
+    auto p = (CScsiCmdInquiry *) cdb;
+    p->m_Opcode = p->OPCODE;
+    p->m_EVPD = 0x1;
+    p->m_PageCode = 0x80;
+    p->m_AllocationLength = htons(buflen);
+
+    // fill out SCSI Generic structure
+    sg.interface_id = 'S';
+    sg.dxfer_direction = SG_DXFER_FROM_DEV;
+    sg.cmd_len = sizeof (cdb);
+    sg.mx_sb_len = sizeof (sense);
+    sg.iovec_count = 0;
+    sg.dxfer_len = buflen;
+    sg.dxferp = buffer;
+    sg.cmdp = cdb;
+    sg.sbp = sense;
+    sg.timeout = 60000;
+    sg.flags = 0;
+    sg.pack_id = 0;
+    sg.usr_ptr = NULL;
+
+    // execute I/O
+    if (ioctl(fd, SG_IO, &sg) < 0) {
+        LOG(D4) << "SG_IO ioctl error: " << strerror(errno);
+        free(buffer);
+        return;
+    }
+    if ((sg.info & SG_INFO_OK_MASK) != SG_INFO_OK) {
+        free(buffer);
+        return;
+    }
+
+    auto resp = (CScsiCmdInquiry_VPD80 *) buffer;
+
+    /*
+     * Proceed only if we have no buffer overrun
+     */
+    if (buflen < htons(resp->m_PageLength) + 4) {
+        free(buffer);
+        return;
+    }
+
+    scsi_truncate_spaces(resp->m_Serial, htons(resp->m_PageLength));
+    safecopy(resp_buf, resp_buf_len, resp->m_Serial, htons(resp->m_PageLength));
+    free(buffer);
+}
+
 void DtaDevLinuxSata::identify_SAS(OPAL_DiskInfo *disk_info)
 {
     sg_io_hdr_t sg;
@@ -487,7 +659,10 @@ void DtaDevLinuxSata::identify_SAS(OPAL_DiskInfo *disk_info)
     }
 
     // fill out disk info fields
-    safecopy(disk_info->serialNum, sizeof(disk_info->serialNum), resp->m_T10VendorId, sizeof(resp->m_T10VendorId));
+    if (g_compat_bsd)
+        retrieve_serial_from_vpd(fd, disk_info->serialNum, sizeof(disk_info->serialNum));
+    else
+        safecopy(disk_info->serialNum, sizeof(disk_info->serialNum), resp->m_T10VendorId, sizeof(resp->m_T10VendorId));
     safecopy(disk_info->firmwareRev, sizeof(disk_info->firmwareRev), resp->m_ProductRevisionLevel, sizeof(resp->m_ProductRevisionLevel));
     safecopy(disk_info->modelNum, sizeof(disk_info->modelNum), resp->m_ProductId, sizeof(resp->m_ProductId));
 

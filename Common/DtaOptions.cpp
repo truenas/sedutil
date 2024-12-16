@@ -144,6 +144,10 @@ uint8_t DtaOptions(int argc, char * argv[], DTA_OPTIONS * opts)
 			opts->output_format = sedutilNormal;
 			outputFormat = sedutilNormal;
 		}
+		else if (!strcmp("-freebsdCompat", argv[i])) {
+			baseOptions += 1;
+			g_compat_bsd = 1;
+		}
 		else if (!(strcmp("-d", argv[i]))) {
 			if (i+1 < argc && !strcmp("nvme", argv[i+1])) {
 				g_force_dev = FORCE_DEV_NVME;
