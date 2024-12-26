@@ -36,6 +36,7 @@ typedef enum _sedutiloutput {
 #define FORCE_DEV_SCSI     2
 
 extern uint8_t g_force_dev; /** force device type */
+extern uint8_t g_compat_bsd; /** force FreeBSD compatibility with Linux */
 
 /** Structure representing the command line issued to the program */
 typedef struct _DTA_OPTIONS {
