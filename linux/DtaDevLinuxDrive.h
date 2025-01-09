@@ -25,15 +25,6 @@ along with sedutil.  If not, see <http://www.gnu.org/licenses/>.
 class DtaDevLinuxDrive {
 public:
     virtual ~DtaDevLinuxDrive( void ) {};
-    /**Initialization.
-     * This function should perform the necessary authority and environment checking
-     * to allow proper functioning of the program, open the device, perform an ATA
-     * identify, add the fields from the identify response to the disk info structure
-     * and if the device is an ATA device perform a call to Discovery0() to complete
-     * the disk_info structure
-     * @param devref character representation of the device is standard OS lexicon
-     */
-    virtual bool init(const char * devref) = 0;
     /** Method to send a command to the device
      * @param cmd command to be sent to the device
      * @param protocol security protocol to be used in the command
@@ -45,4 +36,5 @@ public:
             void * buffer, uint32_t bufferlen) = 0;
     /** Routine to send an identify to the device */
     virtual void identify(OPAL_DiskInfo& disk_info) = 0;
+    int fd;
 };

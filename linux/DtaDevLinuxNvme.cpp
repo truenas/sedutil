@@ -44,27 +44,6 @@ using namespace std;
  */
 DtaDevLinuxNvme::DtaDevLinuxNvme() {}
 
-bool DtaDevLinuxNvme::init(const char * devref)
-{
-    LOG(D1) << "Creating DtaDevLinuxNvme::DtaDev() " << devref;
-    ifstream kopts;
-    bool isOpen = FALSE;
-
-    if ((fd = open(devref, O_RDWR)) < 0) {
-        isOpen = FALSE;
-        // This is a D1 because diskscan looks for open fail to end scan
-        LOG(D1) << "Error opening device " << devref << " " << (int32_t) fd;
-        if (-EPERM == fd) {
-            LOG(E) << "You do not have permission to access the raw disk in write mode";
-            LOG(E) << "Perhaps you might try sudo to run as root";
-        }
-    }
-    else {
-        isOpen = TRUE;
-    }
-	return isOpen;
-}
-
 /** Send an ioctl to the device using nvme admin commands. */
 uint8_t DtaDevLinuxNvme::sendCmd(ATACOMMAND cmd, uint8_t protocol, uint16_t comID,
                          void * buffer, uint32_t bufferlen)
@@ -161,5 +140,4 @@ bool DtaDevLinuxNvme::isNVMe()
 DtaDevLinuxNvme::~DtaDevLinuxNvme()
 {
     LOG(D1) << "Destroying DtaDevLinuxNvme";
-    close(fd);
 }
