@@ -64,6 +64,11 @@ int main(int argc, char * argv[])
 		return DTAERROR_COMMAND_ERROR;
 	}
 	
+	/*
+	 * tempDev, scan, validatePBKDF2, and isValidSED should
+	 * be opened as ReadOnly
+	 */
+	g_dev_state = DEV_STATE_TEMP;
 	if ((opts.action != sedutiloption::scan) && 
 		(opts.action != sedutiloption::validatePBKDF2) &&
 		(opts.action != sedutiloption::isValidSED)) {
@@ -78,6 +83,14 @@ int main(int argc, char * argv[])
 			delete tempDev;
 			return DTAERROR_COMMAND_ERROR;
 		}
+
+		/*
+		 * If we are not querying, open device as RW
+		 */
+		if (opts.action != sedutiloption::query)
+			g_dev_state = DEV_STATE_RW;
+		else
+			g_dev_state = DEV_STATE_QUERY;
 		if (tempDev->isRuby1())
 			d = new DtaDevRuby1(argv[opts.device]);
 		else if (tempDev->isOpal2())

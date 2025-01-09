@@ -18,6 +18,7 @@ along with sedutil.  If not, see <http://www.gnu.org/licenses/>.
 
  * C:E********************************************************************** */
 #include "os.h"
+#include "sys/file.h"
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
@@ -41,6 +42,7 @@ along with sedutil.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace std;
 uint8_t g_force_dev = FORCE_DEV_NONE;
+uint8_t g_dev_state = DEV_STATE_TEMP;
 
 /** The Device class represents a Linux generic storage device.
   * At initialization we determine if we map to the NVMe or SATA derived class
@@ -51,18 +53,34 @@ unsigned long long DtaDevOS::getSize()
 DtaDevOS::DtaDevOS()
 {
 	drive = NULL;
+	isLocked = 0;
 }
 
 /* Determine which type of drive we're using and instantiate a derived class of that type */
 void DtaDevOS::init(const char * devref)
 {
 	LOG(D1) << "DtaDevOS::init " << devref;
+	int oflag = ((g_dev_state == DEV_STATE_RW) ? O_RDWR : O_RDONLY);
 	DtaDevLinuxNvme *nvmeDrive = new DtaDevLinuxNvme();
-	bool drive_init = false;
 
 	memset(&disk_info, 0, sizeof(OPAL_DiskInfo));
 	dev = devref;
 
+	if (access(devref, R_OK | W_OK)) {
+		LOG(E) << "You do not have permission to access the raw disk in write mode";
+		LOG(E) << "Perhaps you might try sudo to run as root";
+	}
+	if ((fd = open(devref, oflag)) < 0) {
+		LOG(D1) << "Error opening device " << devref << " " << (int32_t) fd;
+		isOpen = FALSE;
+		return;
+	}
+	if (g_dev_state != DEV_STATE_TEMP) {
+		isLocked = 1;
+		flock(fd, LOCK_EX);
+	}
+
+	nvmeDrive->fd = fd;
 	if (g_force_dev == FORCE_DEV_NVME)
 	{
 		drive = nvmeDrive;
@@ -71,10 +89,10 @@ void DtaDevOS::init(const char * devref)
 	{
 		delete nvmeDrive;
 		drive = new DtaDevLinuxSata();
+		drive->fd = fd;
 	}
-	else if (nvmeDrive->init(devref) && nvmeDrive->isNVMe())
+	else if (nvmeDrive->isNVMe())
 	{
-		drive_init = true;
 		drive = nvmeDrive;
 	}
 	else if (!strncmp(devref, "/dev/nvme", 9))
@@ -85,6 +103,7 @@ void DtaDevOS::init(const char * devref)
 	{
 		delete nvmeDrive;
 		drive = new DtaDevLinuxSata();
+		drive->fd = fd;
 	}
 	else 
         {
@@ -94,7 +113,7 @@ void DtaDevOS::init(const char * devref)
                 return;
         }
 
-	if (drive_init || drive->init(devref))
+	if (drive)
 	{
 		isOpen = TRUE;
 		drive->identify(disk_info);
@@ -190,7 +209,10 @@ int  DtaDevOS::diskScan()
 /** Close the device reference so this object can be delete. */
 DtaDevOS::~DtaDevOS()
 {
-    LOG(D1) << "Destroying DtaDevOS";
+	LOG(D1) << "Destroying DtaDevOS";
+	if (isLocked)
+		flock(fd, LOCK_UN);
+	close(fd);
 	if (NULL != drive)
 		delete drive;
 }

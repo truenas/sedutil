@@ -63,31 +63,6 @@ DtaDevLinuxSata::DtaDevLinuxSata() {
 isSAS = 0;
 }
 
-bool DtaDevLinuxSata::init(const char * devref)
-{
-    LOG(D1) << "Creating DtaDevLinuxSata::DtaDev() " << devref;
-	bool isOpen = FALSE;
-
-    if (access(devref, R_OK | W_OK)) {
-        LOG(E) << "You do not have permission to access the raw disk in write mode";
-        LOG(E) << "Perhaps you might try sudo to run as root";
-    }
-
-    if ((fd = open(devref, O_RDWR)) < 0) {
-        isOpen = FALSE;
-        // This is a D1 because diskscan looks for open fail to end scan
-        LOG(D1) << "Error opening device " << devref << " " << (int32_t) fd;
-        //        if (-EPERM == fd) {
-        //            LOG(E) << "You do not have permission to access the raw disk in write mode";
-        //            LOG(E) << "Perhaps you might try sudo to run as root";
-        //        }
-    }
-    else {
-        isOpen = TRUE;
-    }
-	return isOpen;
-}
-
 /*
  * Determines if the transport for the given file descriptor `fd` is SATA.
  *
@@ -678,5 +653,4 @@ void DtaDevLinuxSata::identify_SAS(OPAL_DiskInfo *disk_info)
 DtaDevLinuxSata::~DtaDevLinuxSata()
 {
     LOG(D1) << "Destroying DtaDevLinuxSata";
-    close(fd);
 }
