@@ -59,6 +59,7 @@ protected:
     /** return drive size in bytes */
     unsigned long long getSize();
     int fd; /**< Linux handle for the device  */
+    int isLocked; /** device has LOCK_EX */
 private:
     /** OS specific routine to send a SCSI INQUIRY to the device */
     void identify_SAS();
