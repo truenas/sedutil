@@ -1,3 +1,12 @@
+sedutil (1.12-1) unstable; urgency=medium
+
+  * Add shared library packaging
+  * Add libsedutil1 runtime library package
+  * Add libsedutil-dev development package
+  * Switch to autotools build system
+
+ -- TrueNAS Developer <dev@truenas.com>  Thu, 06 Nov 2025 00:00:00 +0000
+
 sedutil (1.12-0) unstable; urgency=medium
 
   * Initial release

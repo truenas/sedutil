@@ -10,6 +10,9 @@ AC_CONFIG_HEADERS([config.h])
 AC_PROG_CXX
 AC_PROG_CC
 
+# Enable libtool for shared library support
+LT_INIT([shared disable-static])
+
 # Checks for libraries.
 
 # Checks for header files.

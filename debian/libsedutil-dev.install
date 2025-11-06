@@ -1,0 +1,3 @@
+usr/lib/*/libsedutil.so
+usr/lib/*/libsedutil.la
+usr/include/sedutil/
