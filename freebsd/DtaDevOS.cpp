@@ -47,6 +47,11 @@ unsigned long long DtaDevOS::getSize()
 	return 0;
 }
 
+void DtaDevOS::rereadPartitionTable()
+{
+	LOG(D1) << "rereadPartitionTable: not implemented on FreeBSD";
+}
+
 DtaDevOS::DtaDevOS()
 {
 	drive = NULL;

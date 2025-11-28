@@ -58,6 +58,8 @@ protected:
     void identify(OPAL_DiskInfo& disk_info);
     /** return drive size in bytes */
     unsigned long long getSize();
+    /** Re-read partition table after successful unlock */
+    void rereadPartitionTable();
     int fd; /**< Linux handle for the device  */
     int isLocked; /** device has LOCK_EX */
 private:

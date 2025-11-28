@@ -58,6 +58,8 @@ protected:
     void identify(OPAL_DiskInfo& disk_info);
     /** return drive size in bytes */
     unsigned long long getSize();
+    /** Re-read partition table after unlock */
+    void rereadPartitionTable();
     int fd; /**< FreeBSD handle for the device  */
 private:
     DtaDevFreeBSDDrive *drive;

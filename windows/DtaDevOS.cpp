@@ -131,6 +131,11 @@ unsigned long long DtaDevOS::getSize() {
 	return(0);
 }
 
+void DtaDevOS::rereadPartitionTable()
+{
+	LOG(D1) << "rereadPartitionTable: not implemented on Windows";
+}
+
 /** adds the IDENTIFY information to the disk_info structure */
 
 void DtaDevOS::identify(OPAL_DiskInfo& di)
