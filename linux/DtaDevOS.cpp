@@ -31,6 +31,7 @@ along with sedutil.  If not, see <http://www.gnu.org/licenses/>.
 #include <algorithm>
 #include <unistd.h>
 #include <linux/hdreg.h>
+#include <linux/fs.h>
 #include <errno.h>
 #include <vector>
 #include <fstream>
@@ -157,6 +158,16 @@ void DtaDevOS::osmsSleep(uint32_t ms)
 {
 	usleep(ms * 1000); //convert to microseconds
     return;
+}
+void DtaDevOS::rereadPartitionTable()
+{
+	if (fd < 0) {
+		LOG(D1) << "rereadPartitionTable: invalid fd";
+		return;
+	}
+	if (ioctl(fd, BLKRRPART, 0) < 0) {
+		LOG(D1) << "BLKRRPART ioctl failed, errno=" << errno;
+	}
 }
 int  DtaDevOS::diskScan()
 {

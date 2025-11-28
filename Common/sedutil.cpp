@@ -146,12 +146,24 @@ int main(int argc, char * argv[])
         return d->loadPBA(argv[opts.password], argv[opts.pbafile]);
 		break;
 	case sedutiloption::setLockingRange:
-        LOG(D) << "Setting Locking Range " << (uint16_t) opts.lockingrange << " " << (uint16_t) opts.lockingstate;
-        return d->setLockingRange(opts.lockingrange, opts.lockingstate, argv[opts.password]);
+		LOG(D) << "Setting Locking Range " << (uint16_t) opts.lockingrange << " " << (uint16_t) opts.lockingstate;
+		{
+			uint8_t rc = d->setLockingRange(opts.lockingrange, opts.lockingstate, argv[opts.password]);
+			if (rc == 0 && opts.lockingstate != OPAL_LOCKINGSTATE::LOCKED) {
+				d->rereadPartitionTable();
+			}
+			return rc;
+		}
 		break;
 	case sedutiloption::setLockingRange_SUM:
 		LOG(D) << "Setting Locking Range " << (uint16_t)opts.lockingrange << " " << (uint16_t)opts.lockingstate << " in Single User Mode";
-		return d->setLockingRange_SUM(opts.lockingrange, opts.lockingstate, argv[opts.password]);
+		{
+			uint8_t rc = d->setLockingRange_SUM(opts.lockingrange, opts.lockingstate, argv[opts.password]);
+			if (rc == 0 && opts.lockingstate != OPAL_LOCKINGSTATE::LOCKED) {
+				d->rereadPartitionTable();
+			}
+			return rc;
+		}
 		break;
 	case sedutiloption::enableLockingRange:
         LOG(D) << "Enabling Locking Range " << (uint16_t) opts.lockingrange;

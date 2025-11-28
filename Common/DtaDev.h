@@ -114,6 +114,10 @@ public:
 	virtual void identify(OPAL_DiskInfo& disk_info) = 0;
 	/** OS specific routine to get size of the device */
 	virtual unsigned long long getSize() = 0;
+	/** Re-read partition table to make partitions visible immediately after unlock,
+	 * avoiding udev race conditions.
+	 */
+	virtual void rereadPartitionTable() {}
 	/*
 	 * virtual functions required to be implemented
 	 * because they are called by sedutil.cpp
