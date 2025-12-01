@@ -54,6 +54,8 @@ public:
 	* @param bufferlen length of the input/output buffer
 	*/
 	unsigned long long	getSize();
+	/** Re-read partition table after unlock */
+	void rereadPartitionTable();
 	/** A static class to scan for supported drives */
 	static int diskScan();
 protected:
