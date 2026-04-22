@@ -31,7 +31,7 @@ DEFAULTCONF=Debug_i686
 CONF=${DEFAULTCONF}
 
 # All Configurations
-ALLCONFS=Debug_i686 Release_i686 Debug_x86_64 Release_x86_64 
+ALLCONFS=Debug_i686 Release_i686 Debug_x86_64 Release_x86_64 Debug_aarch64 Release_aarch64
 
 
 # build

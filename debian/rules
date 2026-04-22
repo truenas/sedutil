@@ -7,14 +7,14 @@ export DH_VERBOSE = 1
 override_dh_auto_build:
 	sh -c "\
 		cd linux/CLI || exit 1; \
-		gmake CONF=Release_x86_64 || exit 1; \
+		gmake CONF=Release_${DEB_TARGET_GNU_CPU} || exit 1; \
 	"
 
 override_dh_auto_install:
 	sh -c "\
 		mkdir -p debian/sedutil/usr/local/bin; \
-		strip -s linux/CLI/dist/Release_x86_64/GNU-Linux/sedutil-cli; \
-		cp -a linux/CLI/dist/Release_x86_64/GNU-Linux/sedutil-cli debian/sedutil/usr/local/bin/; \
+		strip -s linux/CLI/dist/Release_${DEB_TARGET_GNU_CPU}/GNU-Linux/sedutil-cli; \
+		cp -a linux/CLI/dist/Release_${DEB_TARGET_GNU_CPU}/GNU-Linux/sedutil-cli debian/sedutil/usr/local/bin/; \
 	"
 
 override_dh_shlibdeps:

@@ -38,6 +38,22 @@ CND_ARTIFACT_PATH_Release_x86_64=dist/Release_x86_64/GNU-Linux/sedutil-cli
 CND_PACKAGE_DIR_Release_x86_64=dist/Release_x86_64/GNU-Linux/package
 CND_PACKAGE_NAME_Release_x86_64=cli.tar
 CND_PACKAGE_PATH_Release_x86_64=dist/Release_x86_64/GNU-Linux/package/cli.tar
+# Debug_aarch64 configuration
+CND_PLATFORM_Debug_aarch64=GNU-Linux
+CND_ARTIFACT_DIR_Debug_aarch64=dist/Debug_aarch64/GNU-Linux
+CND_ARTIFACT_NAME_Debug_aarch64=sedutil-cli
+CND_ARTIFACT_PATH_Debug_aarch64=dist/Debug_aarch64/GNU-Linux/sedutil-cli
+CND_PACKAGE_DIR_Debug_aarch64=dist/Debug_aarch64/GNU-Linux/package
+CND_PACKAGE_NAME_Debug_aarch64=cli.tar
+CND_PACKAGE_PATH_Debug_aarch64=dist/Debug_aarch64/GNU-Linux/package/cli.tar
+# Release_aarch64 configuration
+CND_PLATFORM_Release_aarch64=GNU-Linux
+CND_ARTIFACT_DIR_Release_aarch64=dist/Release_aarch64/GNU-Linux
+CND_ARTIFACT_NAME_Release_aarch64=sedutil-cli
+CND_ARTIFACT_PATH_Release_aarch64=dist/Release_aarch64/GNU-Linux/sedutil-cli
+CND_PACKAGE_DIR_Release_aarch64=dist/Release_aarch64/GNU-Linux/package
+CND_PACKAGE_NAME_Release_aarch64=cli.tar
+CND_PACKAGE_PATH_Release_aarch64=dist/Release_aarch64/GNU-Linux/package/cli.tar
 #
 # include compiler specific variables
 #
