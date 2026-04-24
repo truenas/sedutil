@@ -5,8 +5,8 @@ Maintainer: Waqar Ahmed <waqar@ixsystems.com>
 Build-Depends:	build-essential,
 		make,
 		debhelper-compat (= 12),
-		gcc-multilib,
-		g++-multilib
+		gcc-multilib [amd64],
+		g++-multilib [amd64]
 Standards-Version: 4.4.0
 Homepage: https://github.com/Drive-Trust-Alliance/sedutil
 
